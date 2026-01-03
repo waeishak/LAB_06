@@ -1,42 +1,25 @@
-name: CI/CD Pipeline
+name: C Build and Run
 
-# 1. Trigger: จะทำงานเมื่อมีการ push ไปที่ branch main
 on:
   push:
     branches: [ "main" ]
-  # อนุญาตให้กดรันเองได้จากหน้าเว็บ
   workflow_dispatch:
 
 jobs:
-  # Job ที่ 1: Build และ Test
   build-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+      # ขั้นตอนที่ 1: ติดตั้ง GCC (ส่วนใหญ่ Ubuntu ใน GitHub มีให้อยู่แล้ว แต่ใส่ชื่อขั้นตอนให้ชัดเจน)
+      - name: Check GCC version
+        run: gcc --version
 
-      - name: Install dependencies
-        run: npm install
+      # ขั้นตอนที่ 2: คอมไพล์ไฟล์ hello.c
+      - name: Compile C Code
+        run: gcc hello.c -o my_program
 
-      - name: Run Tests
-        run: npm test
-        # ถ้า Test ไม่ผ่าน (Error) ขั้นตอน Deploy ด้านล่างจะไม่ทำงาน
-
-      - name: Build Project
-        run: npm run build
-
-  # Job ที่ 2: Deployment (จะทำเมื่อ job แรกสำเร็จ)
-  deploy:
-    needs: build-and-test # รอให้ build-and-test ผ่านก่อน
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to Production
-        run: echo "Deploying to server..."
-        # ในการใช้งานจริง ส่วนนี้จะใส่ Action สำหรับ Deploy เช่น:
-        # uses: JamesIves/github-pages-deploy-action@v4
-        # หรือ Action ของ AWS, Azure, Google Cloud ตามที่คุณใช้
+      # ขั้นตอนที่ 3: ลองรันโปรแกรมดู (Test)
+      - name: Run Program
+        run: ./my_program
