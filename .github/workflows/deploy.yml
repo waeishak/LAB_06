@@ -1,4 +1,4 @@
-name: C Build and Run
+name: 5-Step Super Pipeline
 
 on:
   push:
@@ -6,20 +6,57 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  # กล่องที่ 1: ตรวจเช็กความเรียบร้อยของโค้ด
+  code-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Lint Code
+        run: echo "Checking code style... OK"
 
-      # ขั้นตอนที่ 1: ติดตั้ง GCC (ส่วนใหญ่ Ubuntu ใน GitHub มีให้อยู่แล้ว แต่ใส่ชื่อขั้นตอนให้ชัดเจน)
-      - name: Check GCC version
-        run: gcc --version
+  # กล่องที่ 2: สแกนหาความปลอดภัย (ทำต่อเมื่อกล่อง 1 ผ่าน)
+  security-scan:
+    needs: code-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Security Scan
+        run: echo "Scanning for viruses... Safe"
 
-      # ขั้นตอนที่ 2: คอมไพล์ไฟล์ hello.c
-      - name: Compile C Code
-        run: gcc hello.c -o my_program
+  # กล่องที่ 3: คอมไพล์โค้ด (ทำต่อเมื่อกล่อง 2 ผ่าน)
+  build:
+    needs: security-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Compile C
+        run: gcc hello.c -o my_app
+      # เก็บไฟล์โปรแกรมไว้ส่งให้กล่องถัดไป
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-file
+          path: my_app
 
-      # ขั้นตอนที่ 3: ลองรันโปรแกรมดู (Test)
-      - name: Run Program
-        run: ./my_program
+  # กล่องที่ 4: ทดสอบรันโปรแกรม (ทำต่อเมื่อกล่อง 3 ผ่าน)
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: binary-file
+      - name: Give Permission
+        run: chmod +x my_app
+      - name: Run Test
+        run: ./my_app
+
+  # กล่องที่ 5: จำลองการส่งงาน/Deploy (ทำต่อเมื่อกล่อง 4 ผ่าน)
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server
+        run: echo "Deploying to production server... Success!"
